@@ -19,7 +19,7 @@ export function dayRange(days, now = new Date()) {
   });
 }
 export function authorized(header, secret) {
-  if (!secret || secret.length < 24 || typeof header !== 'string' || header.length > 512) return false;
+  if (!secret || secret.length < 12 || typeof header !== 'string' || header.length > 512) return false;
   const hash = value => createHash('sha256').update(value).digest();
   return timingSafeEqual(hash(header), hash('Bearer ' + secret));
 }
