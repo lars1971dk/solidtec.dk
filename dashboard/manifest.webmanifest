@@ -1,0 +1,17 @@
+{
+  "name": "SOLIDTEC Besøgsstatistik",
+  "short_name": "Statistik",
+  "start_url": "/dashboard/",
+  "scope": "/dashboard/",
+  "display": "standalone",
+  "theme_color": "#123d45",
+  "background_color": "#f3f5f4",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

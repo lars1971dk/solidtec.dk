@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/cleanup",
+      "schedule": "0 4 * * *"
+    }
+  ],
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "regions": [
+    "fra1"
+  ]
+}
