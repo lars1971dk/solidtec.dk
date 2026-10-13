@@ -2,6 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const api=document.querySelector('meta[name="statistics-api"]').content;
+if(!$('ip-settings')){const fresh=new URL(location.href);if(fresh.searchParams.get('v')!=='20261013-ip'){fresh.searchParams.set('v','20261013-ip');location.replace(fresh.href);}return;}
 const svgNS='http://www.w3.org/2000/svg';
 const format=new Intl.NumberFormat('da-DK');
 const regionNames=new Intl.DisplayNames(['da'],{type:'region'});
@@ -9,6 +10,8 @@ const pageNames={da:'Dansk forside',en:'Engelsk forside',home:'Forside'};
 const deviceNames={desktop:'Computer',mobile:'Mobil',tablet:'Tablet',unknown:'Ukendt'};
 const deviceColors={desktop:'#247e7a',mobile:'#e3ab45',tablet:'#7fabb4',unknown:'#d6e0e2'};
 let key='',data=null,busy=false;
+let settingsVersion=null,currentIP=null,settingsLoaded=false,settingsBusy=false;
+function defaultSite(){const select=$('site');for(const option of [...select.options])if(!['solidtec','consults','preview'].includes(option.value))option.remove();select.value='solidtec';$('site-title').textContent='solidtec.dk';}
 function status(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error);}
 function element(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node;}
 function svg(tag,attributes){const node=document.createElementNS(svgNS,tag);for(const [key,value]of Object.entries(attributes||{}))node.setAttribute(key,value);return node;}
@@ -112,7 +115,7 @@ async function load(){
  }catch(error){status(error.message||'Kunne ikke hente statistik.',true);}
  finally{busy=false;$('refresh').disabled=false;$('export').disabled=!data;}
 }
-function logout(){key='';data=null;$('password').value='';$('site').value='solidtec';$('site-title').textContent='solidtec.dk';$('login').hidden=false;$('report').hidden=true;$('logout').hidden=true;status('');}
+function logout(){key='';data=null;settingsLoaded=false;settingsVersion=null;currentIP=null;$('ip-settings').open=false;$('excluded-ips').value='';$('current-ip').textContent='';$('ip-status').textContent='';$('excluded-ips').disabled=true;$('save-ip-settings').disabled=true;$('exclude-current-ip').disabled=true;$('password').value='';$('site').value='solidtec';$('site-title').textContent='solidtec.dk';$('login').hidden=false;$('report').hidden=true;$('logout').hidden=true;status('');}
 function exportCSV(){
  const site=selected();if(!site)return;
  const rows=[['Site','Type','Dato / kategori','Sidevisninger'],[site.name,'I alt',data.days+' dage',site.total]];
@@ -124,11 +127,41 @@ function exportCSV(){
  const url=URL.createObjectURL(new Blob(['\uFEFF'+rows.map(row=>row.map(escaped).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
  const link=element('a');link.href=url;link.download=site.name+'-statistik-'+data.days+'-dage.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-$('site').value='solidtec';
+function ipStatus(text,error=false){$('ip-status').textContent=text;$('ip-status').classList.toggle('error',error);}
+function settingsControls(){ $('excluded-ips').disabled=!settingsLoaded||settingsBusy; $('save-ip-settings').disabled=!settingsLoaded||settingsBusy; $('exclude-current-ip').disabled=!settingsLoaded||!currentIP||settingsBusy; $('reload-ip-settings').disabled=settingsBusy; }
+function applySettings(value){
+ if(!Array.isArray(value.rules)||value.rules.some(rule=>typeof rule!=='string')||(value.version!==null&&typeof value.version!=='string'))throw new Error('Indstillingerne kunne ikke læses.');
+ settingsVersion=value.version;currentIP=typeof value.currentIP==='string'?value.currentIP:null;settingsLoaded=true;
+ $('excluded-ips').value=value.rules.join('\n');$('current-ip').textContent=currentIP?'Din aktuelle IP: '+currentIP:'Din aktuelle IP kunne ikke findes. Du kan stadig indtaste adresser manuelt.';
+}
+async function settingsRequest(options={}){
+ const response=await fetch(api+'/api/settings',{...options,headers:{Authorization:'Bearer '+key,...options.headers},cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer'});
+ if(response.status===401){logout();status('Log ind igen for at ændre indstillinger.',true);throw new Error('Login kræves.');}
+ let body;try{body=await response.json();}catch{throw new Error('Indstillingerne kunne ikke hentes.');}
+ if(!response.ok)throw new Error(body.error||'Indstillingerne kunne ikke gemmes.');
+ return body;
+}
+async function loadIPSettings(){
+ if(settingsBusy)return;settingsBusy=true;settingsControls();ipStatus('Henter indstillinger…');
+ try{applySettings(await settingsRequest());ipStatus('');}catch(error){ipStatus(error.message,true);}finally{settingsBusy=false;settingsControls();}
+}
+async function saveIPSettings(){
+ if(!settingsLoaded||settingsBusy)return;
+ const rules=$('excluded-ips').value.split(/[\n,;]+/).map(value=>value.trim()).filter(Boolean);
+ settingsBusy=true;settingsControls();ipStatus('Gemmer…');
+ try{applySettings(await settingsRequest({method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules,version:settingsVersion})}));ipStatus('Gemt. Nye besøg fra disse IP-adresser tælles ikke med.');}
+ catch(error){ipStatus(error.message,true);}finally{settingsBusy=false;settingsControls();}
+}
+defaultSite();
+window.addEventListener('pageshow',()=>{defaultSite();if(data)render();});
 $('login-form').addEventListener('submit',event=>{event.preventDefault();key=$('password').value;$('password').value='';load();});
 $('site').addEventListener('change',()=>{if(data)render();});
 $('days').addEventListener('change',load);$('refresh').addEventListener('click',load);$('logout').addEventListener('click',logout);$('inspect-day').addEventListener('input',inspectDay);$('export').addEventListener('click',exportCSV);
 let resizeFrame;window.addEventListener('resize',()=>{cancelAnimationFrame(resizeFrame);resizeFrame=requestAnimationFrame(()=>{const site=selected();if(site)drawChart(site);});});
+$('ip-settings').addEventListener('toggle',()=>{if($('ip-settings').open&&!settingsLoaded)loadIPSettings();});
+$('reload-ip-settings').addEventListener('click',loadIPSettings);
+$('ip-form').addEventListener('submit',event=>{event.preventDefault();saveIPSettings();});
+$('exclude-current-ip').addEventListener('click',()=>{if(!currentIP||!settingsLoaded)return;const rules=$('excluded-ips').value.split(/[\n,;]+/).map(v=>v.trim()).filter(Boolean);if(!rules.includes(currentIP))rules.push(currentIP);$('excluded-ips').value=rules.join('\n');saveIPSettings();});
 if(!api)status('Statistikdelen er endnu ikke aktiveret.');
 })();
 

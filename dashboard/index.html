@@ -23,8 +23,18 @@
 <section class="panel"><h2>Enheder</h2><p class="small" style="margin-top:0">Fordeling af sidevisninger</p><div class="devices"><div id="device-ring" class="device-ring"></div><div id="devices" class="device-list"></div></div><p class="small">Enheden er en grov kategori. Ældre visninger uden enhedsdata vises som ukendte.</p></section>
 </div>
 <section class="panel pages-panel"><h2>Sider</h2><table><thead><tr><th>Side</th><th>Andel</th><th>Sidevisninger</th></tr></thead><tbody id="pages"></tbody></table></section>
+<details id="ip-settings" class="panel" style="margin:22px 0"><summary>Ekskluder testbesøg efter IP</summary>
+<p>Listen gælder optællingen på alle tre sites. Besøg fra adresserne bliver ikke registreret fremover. Hjemmesiderne og dashboardet er stadig tilgængelige.</p>
+<p id="current-ip" class="small">Henter din aktuelle IP…</p>
+<button id="exclude-current-ip" type="button" class="secondary" disabled>Ekskluder min IP</button>
+<form id="ip-form"><label for="excluded-ips" style="display:block;margin:18px 0 8px;font-weight:600">IP-adresser eller netværk — én pr. linje</label>
+<textarea id="excluded-ips" rows="5" maxlength="4000" spellcheck="false" autocomplete="off" disabled style="width:100%;padding:12px;border:1px solid #b8c9cd;border-radius:8px;font:14px/1.6 monospace;resize:vertical"></textarea>
+<p class="small">IPv4 og IPv6 understøttes. Du kan også angive et netværk som 192.0.2.0/24. Fjern en linje og gem for at tælle den adresse igen. Din IP kan ændre sig mellem Wi-Fi og mobilnet.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap"><button id="save-ip-settings" type="submit" disabled>Gem ekskluderinger</button><button id="reload-ip-settings" class="secondary" type="button">Hent listen igen</button></div></form>
+<div id="ip-status" class="status" role="status" aria-live="polite"></div>
+<p class="small">Tidligere visninger kan ikke fjernes efter IP, da IP-adresser ikke er gemt i besøgsstatistikken. Listen gemmes privat som en indstilling, adskilt fra visningerne.</p></details>
 <details><summary>Sådan skal tallene læses</summary><p>Vi tæller sidevisninger, ikke unikke personer eller sessioner. Genindlæsninger tæller igen. Landet er et skøn ud fra netværksplacering og kan påvirkes af VPN. IP-adresse og den fulde browseridentifikation gemmes ikke i statistikken. Der bruges ingen statistikcookies eller besøgs-id’er. Kendte bots og fravalg filtreres, men ikke alle automatiske besøg kan genkendes.</p><p>Lande og enheder registreres først fra denne opdatering. Ældre visninger er bevaret som ukendte. Sammenligninger kan mangle historik, og visninger fra vores kontroller er med i tallene. Hostingens driftslogs er separate.</p></details>
 </section>
 <footer>Gem dashboardet på telefonens hjemmeskærm for nem adgang. Statistik gemmes i op til 90 dage. Dagene følger dansk tid. Previews eget dashboard er fortsat separat.</footer>
-</main><script src="./dashboard.js?v=20261013-country"></script></body></html>
+</main><script src="./dashboard.js?v=20261013-ip"></script></body></html>
 
