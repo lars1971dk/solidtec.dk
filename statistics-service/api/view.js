@@ -1,4 +1,4 @@
-import { validView, optedOut, bot } from '../lib/core.js';
+import { validView, optedOut, bot, countryCategory, deviceCategory } from '../lib/core.js';
 import { record } from '../lib/storage.js';
 const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64');
 export default async function handler(req,res) {
@@ -9,8 +9,9 @@ export default async function handler(req,res) {
   if(req.method !== 'GET') return res.status(405).end();
   const {site,page}=req.query;
   if(validView(site,page) && !optedOut(req.headers) && !bot(req.headers)) {
-    try { await record(site,page); } catch { /* Counting outages must not interrupt the website. */ }
+    try { await record(site,page,countryCategory(req.headers),deviceCategory(req.headers)); } catch { /* Counting outages must not interrupt the website. */ }
   }
   res.setHeader('Content-Type','image/gif');
   res.status(200).send(pixel);
 }
+

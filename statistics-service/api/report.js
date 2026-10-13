@@ -14,6 +14,7 @@ export default async function handler(req,res) {
   if(!authorized(req.headers.authorization,process.env.DASHBOARD_ACCESS_KEY)) return res.status(401).json({error:'Login kræves'});
   const days=Number(req.query.days || 7);
   if(![7,30,90].includes(days)) return res.status(400).json({error:'Ugyldig periode'});
-  try { return res.status(200).json(aggregate(await pathsSince(days),days)); }
+  try { return res.status(200).json(aggregate(await pathsSince(90),days)); }
   catch { return res.status(503).json({error:'Statistikken er midlertidigt utilgængelig'}); }
 }
+
