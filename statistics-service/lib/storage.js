@@ -2,8 +2,8 @@ import { put, list, del } from '@vercel/blob';
 import { randomUUID } from 'node:crypto';
 import { dayKey, dayRange } from './core.js';
 
-export async function record(site,page) {
-  const path = 'views/' + dayKey() + '/' + site + '/' + page + '/' + randomUUID() + '.json';
+export async function record(site,page,country='ZZ',device='unknown') {
+  const path = 'views/' + dayKey() + '/' + site + '/' + page + '/' + country + '/' + device + '/' + randomUUID() + '.json';
   // Independent immutable count entries prevent lost updates from concurrent requests.
   // The random object key is generated on the server and never sent to the visitor.
   await put(path, '{"views":1}', { access:'private', addRandomSuffix:false, contentType:'application/json' });
@@ -32,3 +32,4 @@ export async function prune() {
   } while(cursor);
   return removed;
 }
+
