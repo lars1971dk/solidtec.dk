@@ -73,3 +73,24 @@ Deployment verification must confirm an actual public view writes an enriched re
 the authenticated report returns country/device totals, invalid login is denied, and
 the live dashboard renders the new data. Local sample data are labeled and never
 written to production storage.
+
+## Exclude testing IPs
+
+After logging in, open "Ekskluder testbesøg efter IP". "Ekskluder min IP" saves the
+trusted current address immediately. Alternatively enter up to 50 exact IPv4/IPv6
+addresses or CIDR networks and save. Removing a rule resumes future counting.
+Rules apply across all three sites, only to this image counter; they do not block
+websites, login, reports, or preview's independent existing activity dashboard.
+
+Only Vercel's x-vercel-forwarded-for is used in production. Generic forwarded
+headers cannot override it. IPv4-mapped IPv6 and compressed IPv6 are handled by
+Node's BlockList. The request IP is compared transiently and never added to a
+pageview record. Owner-entered exclusions are saved separately in the PRIVATE
+settings/ip-exclusions.json object, read without cache. Changes use ETag leases
+to prevent a stale session overwriting newer edits. On settings-read failure,
+the pixel still loads but the visit is not counted.
+
+IP exclusion affects future views only: historical pageviews contain no addresses
+and cannot be retrospectively filtered. A tester may have different IPv4, IPv6,
+Wi-Fi, mobile or VPN addresses; add each relevant address. The dashboard resets to
+solidtec.dk on page restoration as well as initial load, and removes obsolete options.

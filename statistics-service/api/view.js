@@ -1,17 +1,26 @@
 import { validView, optedOut, bot, countryCategory, deviceCategory } from '../lib/core.js';
 import { record } from '../lib/storage.js';
+import { shouldExclude } from '../lib/ip-exclusions.js';
+import { readSettings } from '../lib/settings-store.js';
 const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7','base64');
-export default async function handler(req,res) {
+export function createHandler({write=record,settings=readSettings,exclude=shouldExclude}={}) {
+ return async function handler(req,res) {
   res.setHeader('Cache-Control','private, no-store, max-age=0');
   res.setHeader('Access-Control-Allow-Origin','*');
   res.setHeader('Cross-Origin-Resource-Policy','cross-origin');
   res.setHeader('X-Content-Type-Options','nosniff');
+  res.setHeader('Access-Control-Expose-Headers','X-Solidtec-Statistics');
   if(req.method !== 'GET') return res.status(405).end();
   const {site,page}=req.query;
   if(validView(site,page) && !optedOut(req.headers) && !bot(req.headers)) {
-    try { await record(site,page,countryCategory(req.headers),deviceCategory(req.headers)); } catch { /* Counting outages must not interrupt the website. */ }
+    try {
+      if(await exclude(req,settings)){res.setHeader('X-Solidtec-Statistics','excluded');}
+      else {await write(site,page,countryCategory(req.headers),deviceCategory(req.headers));res.setHeader('X-Solidtec-Statistics','counted');}
+    }catch{res.setHeader('X-Solidtec-Statistics','unavailable');}
+
   }
   res.setHeader('Content-Type','image/gif');
   res.status(200).send(pixel);
 }
-
+}
+export default createHandler();
