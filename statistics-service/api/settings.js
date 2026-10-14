@@ -1,4 +1,5 @@
-import { authorized, ORIGINS } from '../lib/core.js';
+import { ORIGINS } from '../lib/core.js';
+import { dashboardAuthorized as authorized } from '../lib/dashboard-auth.js';
 import { clientAddress, normalizeRules } from '../lib/ip-exclusions.js';
 import { readSettings, saveSettings } from '../lib/settings-store.js';
 

@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 
-export const SITES = { solidtec: 'solidtec.dk', consults: 'consults.dk', preview: 'preview.solidtec.dk' };
-export const PAGES = { solidtec: ['da', 'en'], consults: ['da', 'en'], preview: ['home'] };
+export const SITES = { solidtec: 'solidtec.dk', consults: 'consults.dk' };
+export const PAGES = { solidtec: ['da', 'en'], consults: ['da', 'en'] };
 export const ORIGINS = new Set(['https://solidtec.dk', 'https://www.solidtec.dk']);
 export function validView(site, page) { return !!PAGES[site]?.includes(page); }
 export function optedOut(headers) { return headers.dnt === '1' || headers['sec-gpc'] === '1'; }
@@ -37,7 +37,7 @@ export function deviceCategory(headers) {
   return 'unknown';
 }
 export function parseView(path) {
-  const match = /^views\/(\d{4}-\d{2}-\d{2})\/(solidtec|consults|preview)\/(da|en|home)\/(?:(\w{2})\/(desktop|mobile|tablet|unknown)\/)?[a-z0-9-]+\.json$/.exec(path);
+  const match = /^views\/(\d{4}-\d{2}-\d{2})\/(solidtec|consults)\/(da|en|home)\/(?:(\w{2})\/(desktop|mobile|tablet|unknown)\/)?[a-z0-9-]+\.json$/.exec(path);
   if (!match) return null;
   const [,day,site,page,country,device] = match;
   if (!validView(site,page) || (country && !/^[A-Z]{2}$/.test(country))) return null;
