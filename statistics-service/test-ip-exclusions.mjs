@@ -31,7 +31,7 @@ assert.equal(await shouldExclude({headers:{'x-vercel-forwarded-for':'192.0.2.1'}
 test('Excluded requests return the pixel without a count on every site',async()=>{
 let writes=0;
 const handler=viewHandler({write:async()=>writes++,settings:async()=>({rules:['192.0.2.1']}),exclude:(req,read)=>shouldExclude(req,read,true)});
-for(const [site,page]of [['solidtec','da'],['consults','en'],['preview','home']]){
+for(const [site,page]of [['solidtec','da'],['consults','en']]){
 const res=response();await handler({method:'GET',query:{site,page},headers:{'x-vercel-forwarded-for':'192.0.2.1'}},res);assert.equal(res.code,200);assert.equal(res.headers['X-Solidtec-Statistics'],'excluded');
 }
 assert.equal(writes,0);

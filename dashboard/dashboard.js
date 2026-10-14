@@ -2,7 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const api=document.querySelector('meta[name="statistics-api"]').content;
-if(!$('ip-settings')){const fresh=new URL(location.href);if(fresh.searchParams.get('v')!=='20261013-ip'){fresh.searchParams.set('v','20261013-ip');location.replace(fresh.href);}return;}
+if(!$('mail-login-form')){const fresh=new URL(location.href);if(fresh.searchParams.get('v')!=='20261014-mail'){fresh.searchParams.set('v','20261014-mail');location.replace(fresh.href);}return;}
 const svgNS='http://www.w3.org/2000/svg';
 const format=new Intl.NumberFormat('da-DK');
 const regionNames=new Intl.DisplayNames(['da'],{type:'region'});
@@ -11,7 +11,7 @@ const deviceNames={desktop:'Computer',mobile:'Mobil',tablet:'Tablet',unknown:'Uk
 const deviceColors={desktop:'#247e7a',mobile:'#e3ab45',tablet:'#7fabb4',unknown:'#d6e0e2'};
 let key='',data=null,busy=false;
 let settingsVersion=null,currentIP=null,settingsLoaded=false,settingsBusy=false;
-function defaultSite(){const select=$('site');for(const option of [...select.options])if(!['solidtec','consults','preview'].includes(option.value))option.remove();select.value='solidtec';$('site-title').textContent='solidtec.dk';}
+function defaultSite(){const select=$('site');for(const option of [...select.options])if(!['solidtec','consults'].includes(option.value))option.remove();select.value='solidtec';$('site-title').textContent='solidtec.dk';}
 function status(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error);}
 function element(tag,text,cls){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(cls)node.className=cls;return node;}
 function svg(tag,attributes){const node=document.createElementNS(svgNS,tag);for(const [key,value]of Object.entries(attributes||{}))node.setAttribute(key,value);return node;}
@@ -99,8 +99,8 @@ function render(){
  status(site.total===0?'Ingen registrerede sidevisninger i denne periode.':'');
 }
 function validate(value){
- if(!value||![7,30,90].includes(value.days)||!Array.isArray(value.sites)||value.sites.length!==3)return false;
- return value.sites.every(site=>['solidtec','consults','preview'].includes(site.id)&&Number.isFinite(site.total)&&Array.isArray(site.daily)&&site.daily.length===value.days&&site.daily.every(day=>/^\d{4}-\d{2}-\d{2}$/.test(day.day)&&Number.isFinite(day.views))&&Array.isArray(site.pages));
+ if(!value||![7,30,90].includes(value.days)||!Array.isArray(value.sites)||value.sites.length!==2)return false;
+ return value.sites.every(site=>['solidtec','consults'].includes(site.id)&&Number.isFinite(site.total)&&Array.isArray(site.daily)&&site.daily.length===value.days&&site.daily.every(day=>/^\d{4}-\d{2}-\d{2}$/.test(day.day)&&Number.isFinite(day.views))&&Array.isArray(site.pages));
 }
 async function load(){
  if(busy)return;
@@ -108,7 +108,7 @@ async function load(){
  busy=true;$('refresh').disabled=true;$('export').disabled=true;status('Henter statistik…');
  try{
  const response=await fetch(api+'/api/report?days='+$('days').value,{headers:{Authorization:'Bearer '+key},credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'});
- if(response.status===401){logout();throw new Error('Adgangskoden blev ikke accepteret.');}
+ if(response.status===401){logout();throw new Error('Login er udl�bet eller blev ikke accepteret. Bed om et nyt mail-link.');}
  if(!response.ok)throw new Error('Statistikken kunne ikke hentes. Prøv igen om lidt.');
  const report=await response.json();if(!validate(report))throw new Error('Statistikken kunne ikke læses.');
  data=report;$('login').hidden=true;$('report').hidden=false;$('logout').hidden=false;render();
@@ -162,6 +162,18 @@ $('ip-settings').addEventListener('toggle',()=>{if($('ip-settings').open&&!setti
 $('reload-ip-settings').addEventListener('click',loadIPSettings);
 $('ip-form').addEventListener('submit',event=>{event.preventDefault();saveIPSettings();});
 $('exclude-current-ip').addEventListener('click',()=>{if(!currentIP||!settingsLoaded)return;const rules=$('excluded-ips').value.split(/[\n,;]+/).map(v=>v.trim()).filter(Boolean);if(!rules.includes(currentIP))rules.push(currentIP);$('excluded-ips').value=rules.join('\n');saveIPSettings();});
+async function loginRequest(body){
+ const response=await fetch(api+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer',body:JSON.stringify(body)});
+ const value=await response.json();if(!response.ok)throw new Error(value.error||'Login kunne ikke gennemf�res.');return value;
+}
+async function initLogin(){
+ const params=new URLSearchParams(location.hash.slice(1)),token=params.get('login_token');
+ history.replaceState(null,'',location.pathname+location.search);
+ if(token){try{const session=await loginRequest({action:'redeem',token});key=session.token;await load();}catch(error){status(error.message,true);}return;}
+ try{const response=await fetch(api+'/api/login',{credentials:'omit',cache:'no-store'});if(!response.ok)throw Error();const config=await response.json();$('legacy-login').hidden=config.ready;$('login-email').value=config.email;$('mail-login-status').textContent=config.ready?'':'Mailafsenderen er endnu ikke aktiveret. Det eksisterende login kan bruges midlertidigt nedenfor.';}catch{$('mail-login-status').textContent='Loginstatus kunne ikke hentes. Pr�v igen senere.';}
+}
+$('mail-login-form').addEventListener('submit',async event=>{event.preventDefault();$('request-link').disabled=true;try{await loginRequest({action:'request',email:$('login-email').value});$('mail-login-status').textContent='Tjek din indbakke og spamfolder. �bn mailens login-link.';}catch(error){$('mail-login-status').textContent=error.message;}finally{$('request-link').disabled=false;}});
+initLogin();
 if(!api)status('Statistikdelen er endnu ikke aktiveret.');
 })();
 

@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { aggregate, validView, optedOut, authorized, dayKey, dayRange, countryCategory, deviceCategory, parseView } from './lib/core.js';
 test('Only approved public page categories are accepted',()=>{
   assert.equal(validView('solidtec','da'),true);
-  assert.equal(validView('preview','home'),true);
+  assert.equal(validView('preview','home'),false);
   for(const [s,p] of [['preview','upload'],['preview','da'],['consults','email@example.dk'],['other','home']]) assert.equal(validView(s,p),false);
 });
 test('Reports contain only daily counters and correct site separation',()=>{
   const result=aggregate(['views/2026-10-12/solidtec/da/abc.json','views/2026-10-12/consults/en/def.json','views/2026-10-11/preview/home/ghi.json','views/2026-01-01/solidtec/da/old.json','views/2026-10-12/preview/upload/no.json'],7,new Date('2026-10-12T10:00:00Z'));
-  assert.deepEqual(result.sites.map(s=>s.total),[1,1,1]);
+  assert.deepEqual(result.sites.map(s=>s.total),[1,1]);
   assert.equal(result.sites[0].daily.length,7);
   assert.equal(result.sites[0].pages[0].views,1);
   assert.equal(JSON.stringify(result).includes('abc'),false);

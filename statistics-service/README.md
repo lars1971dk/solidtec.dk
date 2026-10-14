@@ -8,20 +8,20 @@ its Supabase project, sales records, hosting lifecycle or private dashboard.
 
 ## Dashboard
 
-The dashboard always starts with solidtec.dk. Select consults.dk or preview.solidtec.dk
+The dashboard always starts with solidtec.dk. Select consults.dk
 to inspect that site independently; there is no combined view. Reports cover 7, 30 or 90
 Danish calendar days and show pageviews, today's views, daily average, countries,
 device categories, page/language distribution, a daily chart and selected-site CSV export.
 
-Login uses DASHBOARD_ACCESS_KEY, supplied only through Vercel's production Secret.
-Never commit the key, tokens, login files or browser sessions. The key stays in memory
-while viewing the dashboard; logging out clears it. The minimum supported length is
-12 characters. Prefer a long randomly generated key when setting up a new installation.
+Login uses an emailed, single-use link for lt@solidtec.dk. DASHBOARD_ACCESS_KEY is
+the server-side signing secret and is never sent to the browser during mail login.
+Never commit keys, tokens, login files or browser sessions. A short-lived session
+stays in memory while viewing the dashboard; logging out clears it.
 
 ## Collection and privacy
 
 The existing static image counters use fixed allowlisted categories:
-solidtec/da, solidtec/en, consults/da, consults/en, preview/home.
+solidtec/da, solidtec/en, consults/da, consults/en.
 No changes to those website counters are required for country/device enrichment.
 Preview's private pages and existing dashboard remain excluded from this counter.
 
@@ -60,7 +60,7 @@ GitHub main updates deploy the dashboard through GitHub Pages and the API throug
 the separate Vercel project. Existing website DNS stays on GitHub Pages.
 BLOB_READ_WRITE_TOKEN is supplied by the private store connection.
 CRON_SECRET authenticates daily cleanup. Only the image counter is intentionally
-public; report requests require the dashboard key and an approved dashboard origin.
+public; report requests require an owner session and an approved dashboard origin.
 Storage/hosting usage quotas and any applicable billing remain in effect.
 
 ## Validation
@@ -79,7 +79,7 @@ written to production storage.
 After logging in, open "Ekskluder testbesøg efter IP". "Ekskluder min IP" saves the
 trusted current address immediately. Alternatively enter up to 50 exact IPv4/IPv6
 addresses or CIDR networks and save. Removing a rule resumes future counting.
-Rules apply across all three sites, only to this image counter; they do not block
+Rules apply across solidtec.dk and consults.dk, only to this image counter; they do not block
 websites, login, reports, or preview's independent existing activity dashboard.
 
 Only Vercel's x-vercel-forwarded-for is used in production. Generic forwarded
@@ -94,3 +94,17 @@ IP exclusion affects future views only: historical pageviews contain no addresse
 and cannot be retrospectively filtered. A tester may have different IPv4, IPv6,
 Wi-Fi, mobile or VPN addresses; add each relevant address. The dashboard resets to
 solidtec.dk on page restoration as well as initial load, and removes obsolete options.
+
+## Independent mail login
+
+The dashboard owner is lt@solidtec.dk. No preview service, Supabase or shared login is used. Configure these production values on solidtec.dk-statistics-service:
+DASHBOARD_ADMIN_EMAIL=lt@solidtec.dk
+DASHBOARD_SMTP_HOST=send.one.com (or your approved mail provider)
+DASHBOARD_SMTP_PORT=465
+DASHBOARD_SMTP_USER=lt@solidtec.dk
+DASHBOARD_SMTP_PASSWORD=the mailbox password, saved only as a Vercel Secret.
+DASHBOARD_ACCESS_KEY remains server-only as the signing secret.
+
+Mail links expire after 15 minutes and can be used once; private Blob ETag writes prevent simultaneous redemption. At most two links can be requested per UTC hour. The resulting session expires after one hour and is held only in browser memory. Refreshing the page requires a new login link. Logout clears it. Once the SMTP sender is configured, the old password no longer authorizes reports or settings. Until then the old login remains available to avoid locking out the owner.
+
+Preview counts are no longer collected or returned by this service. Existing retained preview objects are not deleted by this change and expire through the normal retention process. IP rules here apply only to solidtec.dk and consults.dk.

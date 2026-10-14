@@ -1,4 +1,5 @@
-import { aggregate, authorized, ORIGINS } from '../lib/core.js';
+import { aggregate, ORIGINS } from '../lib/core.js';
+import { dashboardAuthorized as authorized } from '../lib/dashboard-auth.js';
 import { pathsSince } from '../lib/storage.js';
 export default async function handler(req,res) {
   res.setHeader('Cache-Control','private, no-store');
