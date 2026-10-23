@@ -960,7 +960,7 @@ footer b{color:#fff;font-weight:600}
         </div>
       </div>
 
-      <form class="reveal" style="--d:.12s" onsubmit="return sendMail(this)">
+      <form class="reveal" style="--d:.12s" onsubmit="sendMail(this); return false">
         <div class="f-row">
           <div>
             <label for="firma">Firma *</label>
@@ -997,7 +997,9 @@ footer b{color:#fff;font-weight:600}
           <textarea id="besked" name="besked" required placeholder="Vælg et emne ovenfor for at få en starttekst, eller skriv frit. Jo mere konkret, desto bedre kan vi forberede os til samtalen."></textarea>
         </div>
         <button class="btn btn-light" type="submit">Book en konsultation</button>
-        <p class="form-note">Beskeden åbner i jeres mailprogram, klar til at sende. I kan også ringe direkte på +45 70 27 37 00.</p>
+        <p class="form-note">Din henvendelse sendes direkte og bruges kun til at besvare din forespørgsel. Du kan også ringe på +45 70 27 37 00.</p>
+        <p class="form-note" data-form-status role="status" aria-live="polite"></p>
+        <div style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden" aria-hidden="true"><label for="website-contact">Website</label><input id="website-contact" name="website" tabindex="-1" autocomplete="off"></div>
       </form>
     </div>
   </div>
@@ -1086,20 +1088,32 @@ document.querySelectorAll('.topic').forEach(btn => {
   });
 });
 
-function sendMail(f){
-  const emne = f.emne.value ? f.emne.value + ', ' : '';
-  const s = encodeURIComponent('Konsultation: ' + emne + f.firma.value);
-  const b = encodeURIComponent(
-    'Firma: ' + f.firma.value + '\n' +
-    'Navn: ' + f.navn.value + '\n' +
-    'E-mail: ' + f.email.value + '\n' +
-    'Telefon: ' + (f.tlf.value || 'ikke oplyst') + '\n' +
-    'Emne: ' + (f.emne.value || 'Ikke angivet') + '\n\n' +
-    f.besked.value
-  );
-  window.location.href = 'mailto:' + CONTACT_EMAIL + '?subject=' + s + '&body=' + b;
+async function sendMail(f){
+  const btn=f.querySelector('button[type="submit"]'),status=f.querySelector('[data-form-status]');
+  if(btn.disabled)return false;
+  btn.disabled=true;
+  btn.textContent="Sender…";
+  status.textContent="Sender din henvendelse…";
+  status.style.color='';
+  const data={firma:f.elements.firma.value,navn:f.elements.navn.value,email:f.elements.email.value,tlf:f.elements.tlf.value,emne:f.elements.emne.value,besked:f.elements.besked.value,website:f.elements.website.value,lang:"da"};
+  try{
+    const response=await fetch('https://solidtecdk-statistics-service.vercel.app/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),cache:'no-store'});
+    if(!response.ok)throw new Error('Message not accepted');
+    const result=await response.json();
+    if(!result.ok)throw new Error('Message not accepted');
+    f.reset();
+    f.querySelectorAll('.topic.selected,.topic.active').forEach(el=>el.classList.remove('selected','active'));
+    status.textContent="Tak! Din henvendelse er sendt. Vi vender tilbage til dig.";
+    status.style.color='#166534';
+  }catch{
+    status.textContent="Din besked kunne ikke sendes. Ring venligst på +45 70 27 37 00 eller skriv til lt@solidtec.dk.";
+    status.style.color='#b91c1c';
+  }finally{
+    btn.disabled=false;btn.textContent="Book en konsultation";
+  }
   return false;
 }
+
 </script>
 
 <p style="text-align:center;font-size:12px;padding:10px;color:#666">Vi måler samlede sidevisninger uden statistikcookies eller besøgs-id’er. Statistik gemmes i op til 90 dage.</p>
