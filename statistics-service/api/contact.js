@@ -38,7 +38,8 @@ export function createHandler({ready=contactReady,send=sendContact,reserve=reser
    firma:clean(data.firma,120),navn:clean(data.navn,120),
    email:clean(data.email,254),tlf:clean(data.tlf||'',60),
    emne:clean(data.emne||'',100),besked:clean(data.besked,2500),
-   lang:data.lang==='en'?'en':'da',site
+   lang:data.lang==='en'?'en':'da',site,
+   copyToSender:site==='consults'&&data.copyToSender===true
   };
   const safeHeaderField=v=>typeof v==='string'&&!/[\r\n]/.test(v);
   if(!payload.firma||!payload.navn||!payload.besked||payload.besked.length<10||
@@ -46,10 +47,18 @@ export function createHandler({ready=contactReady,send=sendContact,reserve=reser
      !safeHeaderField(payload.email)||!safeHeaderField(payload.navn)||
      !safeHeaderField(payload.emne)||!safeHeaderField(payload.firma)||
      payload.emne===null||payload.tlf===null)return err(res,400,'Check the required fields');
-  if(!ready())return err(res,503,'Contact form not configured');
+  if(!ready(site))return err(res,503,'Contact form not configured');
   try{
    if(!await reserve(site))return err(res,429,'Too many requests; try again later');
-   await send(payload);
+   const delivery=await send(payload);
+   if(site==='consults'){
+    // A customer-copy error must not erase successful owner delivery.
+    return res.status(200).json({
+     ok:true,
+     copyRequested:payload.copyToSender,
+     copySent:payload.copyToSender===true && delivery?.copySent===true
+    });
+   }
    return res.status(200).json({ok:true});
   }catch(error){
    console.error('Contact submission failed',error?.name||'Error');
