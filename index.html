@@ -1104,7 +1104,7 @@ async function sendMail(f){
     if(!result.ok)throw new Error('Message not accepted');
     f.reset();
     f.querySelectorAll('.topic.selected,.topic.active').forEach(el=>el.classList.remove('selected','active'));
-    status.textContent="Tak! Din henvendelse er sendt. Vi vender tilbage til dig.";
+    status.textContent=data.copy?(result.copySent?"Tak! Din henvendelse er sendt, og du har fået en kopi på e-mail.":"Din henvendelse er sendt, men kopien kunne ikke leveres. Kontakt os, hvis du har brug for den."):"Tak! Din henvendelse er sendt. Vi vender tilbage til dig.";
     status.style.color='#166534';
   }catch{
     status.textContent="Din besked kunne ikke sendes. Ring venligst på +45 70 27 37 00 eller skriv til info@solidtec.dk.";
