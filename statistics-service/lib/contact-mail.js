@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 
 // This endpoint serves two independent websites. A mail recipient is NOT the
 // same as the SMTP sender: mail providers such as one.com require sender and
