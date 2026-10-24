@@ -218,3 +218,26 @@ Mail links expire after 15 minutes and can be used once; private Blob ETag write
 
 Preview counts are no longer collected or returned by this service. Existing retained preview objects are not deleted by this change and expire through the normal retention process. IP rules here apply only to solidtec.dk and consults.dk.
 
+## CONSULTS separate sender and customer copy
+
+The contact endpoint also serves consults.dk, with a separate, server-selected
+recipient of info@consults.dk. SOLIDTEC retains its own HTML email, recipient
+info@solidtec.dk, and optional customer copy.
+
+CONSULTS uses a separate navy/orange HTML email with a plain-text fallback.
+When visitors explicitly select the email-copy checkbox, the server sends
+a second acknowledgement email to the validated visitor address. If the copy
+fails after the owner message has been accepted, the API reports partial
+success rather than encouraging duplicate submissions.
+
+To use From: CONSULTS <info@consults.dk>, authenticate SMTP with that mailbox:
+configure CONSULTS_SMTP_PASSWORD as a Sensitive Production environment variable
+in the existing Vercel project. CONSULTS_SMTP_USER defaults to info@consults.dk.
+The sender inherits the existing send.one.com SMTP host/port unless configured
+otherwise. Never store SMTP passwords in repository files or browser code.
+
+Until this credential has been configured, the existing SOLIDTEC sender remains
+the temporary fallback for CONSULTS owner mail and visitor copies are not sent.
+Verify the visible sender and both deliveries with real mail after updating
+the production environment and redeploying.
+
