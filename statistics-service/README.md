@@ -245,3 +245,28 @@ the authenticated SMTP account to avoid sender mismatch or spam rejection.
 The server continues to select the recipient by validated browser Origin.
 `Reply-To` continues to be the visitor's email for direct replies.
 
+
+## Branded CONSULTS enquiry email and visitor copy (24 October 2026)
+
+The CONSULTS contact endpoint now returns optional `copyRequested` / `copySent`
+flags. The browser sends `copyToSender: true` only when the visitor explicitly
+checks the new opt-in checkbox; SOLIDTEC continues its previous behaviour.
+
+The CONSULTS owner email is a responsive HTML layout with text fallback:
+dark navy CONSULTS branding, orange accent, structured contact data,
+plainly displayed message, and a direct reply link. All visitor content
+is HTML-escaped and displayed as text. No remote tracking pixels.
+
+A requested customer copy is sent **separately** to the visitor's own
+validated email, never by adding a client-controlled recipient to the
+main owner message. It has its own thank-you heading and a Reply-To of
+`info@consults.dk`. Customer copies are only sent after the independent
+`CONSULTS_SMTP_PASSWORD` has been set. If the owner message succeeds
+and the copy fails, the API reports `{ok:true,copySent:false}` rather
+than inviting an automatic resend that would duplicate the owner email.
+
+Until the protected CONSULTS SMTP credential has been configured,
+the existing SOLIDTEC-authenticated SMTP delivery remains the temporary
+owner-mail fallback and the customer copy cannot be sent. This is not
+a finished sender-identity configuration. Authenticate as
+`info@consults.dk` before claiming that the visible sender has changed.

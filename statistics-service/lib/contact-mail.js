@@ -82,7 +82,7 @@ export function contactEmailHtml(payload,{customer=false}={}){
  ).join('');
  const action=customer
   ?'<a href="mailto:info@consults.dk" style="display:inline-block;background-color:#ed651c;color:#fff;font-weight:700;padding:12px 20px;text-decoration:none;border-radius:5px;">'+(lang==='en'?'Reply to CONSULTS':'Svar CONSULTS')+'</a>'
-  :'<a href="mailto:'+encodeURIComponent(String(payload.email))+'" style="display:inline-block;background-color:#ed651c;color:#fff;font-weight:700;padding:12px 20px;text-decoration:none;border-radius:5px;">'+(lang==='en'?'Reply to visitor':'Besvar forespørgsel')+'</a>';
+  :'<a href="mailto:'+escapeHtml(payload.email)+'" style="display:inline-block;background-color:#ed651c;color:#fff;font-weight:700;padding:12px 20px;text-decoration:none;border-radius:5px;">'+(lang==='en'?'Reply to visitor':'Besvar forespørgsel')+'</a>';
  return '<!doctype html><html lang="'+lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
   '<title>'+escapeHtml(title)+'</title></head>'+
   '<body style="margin:0;padding:24px 12px;background:#f2f5fa;font-family:Arial,Helvetica,sans-serif;color:#17243b;">'+
