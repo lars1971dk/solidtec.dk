@@ -52,7 +52,7 @@ export function createHandler({ready=contactReady,send=sendContact,reserve=reser
    const delivery=await send(payload);
    return res.status(200).json({ok:true,copySent:delivery?.copySent===true});
   }catch(error){
-   console.error('Contact submission failed',error?.name||'Error');
+   console.error('Contact submission failed', {name:error?.name||'Error',code:error?.code||'unknown',command:error?.command||'unknown',responseCode:error?.responseCode||null});
    return err(res,503,'Could not send message; please contact us by phone or email');
   }
  };
