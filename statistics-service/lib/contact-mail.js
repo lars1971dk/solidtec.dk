@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 export function contactSmtpSettings(site,config=process.env) {
  if(!['solidtec','consults'].includes(site)) throw new Error('Unknown contact site');
  const solidtec={
