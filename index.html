@@ -1099,15 +1099,15 @@ async function sendMail(f){
   const data={firma:f.elements.firma.value,navn:f.elements.navn.value,email:f.elements.email.value,tlf:f.elements.tlf.value,emne:f.elements.emne.value,besked:f.elements.besked.value,website:f.elements.website.value,copy:f.elements.copy.checked,lang:"da"};
   try{
     const response=await fetch('https://solidtecdk-statistics-service.vercel.app/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),cache:'no-store'});
-    if(!response.ok)throw new Error('Message not accepted');
+    if(!response.ok){const details=await response.json().catch(()=>({}));const ex=new Error('HTTP '+response.status);ex.status=response.status;ex.serverMessage=details.error;throw ex;}
     const result=await response.json();
     if(!result.ok)throw new Error('Message not accepted');
     f.reset();
     f.querySelectorAll('.topic.selected,.topic.active').forEach(el=>el.classList.remove('selected','active'));
     status.textContent=data.copy?(result.copySent?"Tak! Din henvendelse er sendt, og du har fået en kopi på e-mail.":"Din henvendelse er sendt, men kopien kunne ikke leveres. Kontakt os, hvis du har brug for den."):"Tak! Din henvendelse er sendt. Vi vender tilbage til dig.";
     status.style.color='#166534';
-  }catch{
-    status.textContent="Din besked kunne ikke sendes. Ring venligst på +45 70 27 37 00 eller skriv til info@solidtec.dk.";
+  }catch(error){
+    status.textContent=error.status===400?'Kontrollér firma, navn, e-mail og at din besked indeholder mindst 10 tegn.':error.status===429?'Der er sendt for mange forespørgsler. Prøv igen senere.':error.status===503?'Mailtjenesten kunne ikke afsende din besked. Ring på +45 70 27 37 00 eller skriv til info@solidtec.dk.':error.status?'Der opstod en serverfejl (HTTP '+error.status+'). Kontakt info@solidtec.dk.':'Forbindelsen til mailtjenesten fejlede. Tjek internetforbindelsen og prøv igen. Kontakt ellers info@solidtec.dk.';
     status.style.color='#b91c1c';
   }finally{
     btn.disabled=false;btn.textContent="Book en konsultation";
