@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHandler} from './api/contact.js';
-import {makeContactMessage} from './lib/contact-mail.js';
+import {makeContactMessage,contactSmtpSettings,contactReady} from './lib/contact-mail.js';
 function mock(body,options={}){
  const response={statusCode:200,headers:{},data:null};
  response.setHeader=(k,v)=>{response.headers[k]=v;return response;};
@@ -80,4 +80,66 @@ test('options preflight for CONSULTS does not send',async()=>{
  const {request,response}=mock(null,{origin:'https://consults.dk',method:'OPTIONS'});
  await createHandler({ready:()=>true,reserve:async()=>true,send:async()=>{throw Error('Should not send');}})(request,response);
  assert.equal(response.statusCode,204);
+});
+
+
+test('CONSULTS uses independent authenticated SMTP only when configured',()=>{
+ const env={
+  DASHBOARD_SMTP_HOST:'send.one.com',DASHBOARD_SMTP_PORT:'465',
+  DASHBOARD_SMTP_USER:'lt@solidtec.dk',DASHBOARD_SMTP_PASSWORD:'solidtec-secret',
+  CONSULTS_SMTP_USER:'info@consults.dk',CONSULTS_SMTP_PASSWORD:'consults-secret'
+ };
+ const base={...valid,site:'solidtec'};
+ const other={...valid,site:'consults'};
+ assert.deepEqual(contactSmtpSettings('solidtec',env).user,'lt@solidtec.dk');
+ assert.deepEqual(contactSmtpSettings('consults',env).user,'info@consults.dk');
+ assert.equal(contactSmtpSettings('consults',env).host,'send.one.com');
+ assert.equal(contactSmtpSettings('consults',env).port,465);
+ assert.equal(contactReady('solidtec',env),true);
+ assert.equal(contactReady('consults',env),true);
+ const consults=makeContactMessage(other,env);
+ const solidtec=makeContactMessage(base,env);
+ assert.deepEqual(consults.from,{name:'CONSULTS',address:'info@consults.dk'});
+ assert.equal(consults.to,'info@consults.dk');
+ assert.equal(solidtec.from,'lt@solidtec.dk');
+ assert.equal(solidtec.to,'lt@solidtec.dk');
+ assert.equal(consults.replyTo.address,'test@example.com');
+});
+test('a separate CONSULTS password alone uses its own mailbox by default',()=>{
+ const env={
+  DASHBOARD_SMTP_HOST:'send.one.com',DASHBOARD_SMTP_USER:'lt@solidtec.dk',DASHBOARD_SMTP_PASSWORD:'solidtec-secret',
+  CONSULTS_SMTP_PASSWORD:'consults-secret'
+ };
+ assert.equal(contactSmtpSettings('consults',env).user,'info@consults.dk');
+ assert.equal(makeContactMessage({...valid,site:'consults'},env).from.address,'info@consults.dk');
+});
+test('existing SMTP stays working while CONSULTS is not yet configured',()=>{
+ const env={
+  DASHBOARD_SMTP_HOST:'send.one.com',DASHBOARD_SMTP_USER:'lt@solidtec.dk',DASHBOARD_SMTP_PASSWORD:'solidtec-secret'
+ };
+ const smtp=contactSmtpSettings('consults',env);
+ assert.equal(smtp.dedicated,false);
+ assert.equal(smtp.user,'lt@solidtec.dk');
+ assert.equal(makeContactMessage({...valid,site:'consults'},env).from,'lt@solidtec.dk');
+});
+test('bad CONSULTS credentials must not silently spoof another sender',()=>{
+ const env={
+  DASHBOARD_SMTP_HOST:'send.one.com',DASHBOARD_SMTP_USER:'lt@solidtec.dk',DASHBOARD_SMTP_PASSWORD:'solidtec-secret',
+  CONSULTS_SMTP_USER:'unknown@example.com',CONSULTS_SMTP_PASSWORD:'incorrect'
+ };
+ assert.equal(contactReady('consults',env),false);
+ assert.throws(()=>contactSmtpSettings('consults',env),/info@consults.dk/);
+ assert.throws(()=>makeContactMessage({...valid,site:'consults'},env));
+});
+test('a different approved CONSULTS provider can be configured independently',()=>{
+ const env={
+  DASHBOARD_SMTP_HOST:'send.one.com',DASHBOARD_SMTP_PORT:'465',
+  DASHBOARD_SMTP_USER:'lt@solidtec.dk',DASHBOARD_SMTP_PASSWORD:'solidtec-secret',
+  CONSULTS_SMTP_USER:'info@consults.dk',CONSULTS_SMTP_PASSWORD:'consults-secret',
+  CONSULTS_SMTP_HOST:'smtp.example.com',CONSULTS_SMTP_PORT:'587'
+ };
+ const consults=contactSmtpSettings('consults',env);
+ assert.equal(consults.host,'smtp.example.com');
+ assert.equal(consults.port,587);
+ assert.equal(contactSmtpSettings('solidtec',env).host,'send.one.com');
 });

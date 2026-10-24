@@ -218,3 +218,30 @@ Mail links expire after 15 minutes and can be used once; private Blob ETag write
 
 Preview counts are no longer collected or returned by this service. Existing retained preview objects are not deleted by this change and expire through the normal retention process. IP rules here apply only to solidtec.dk and consults.dk.
 
+
+## Separate CONSULTS sender identity (24 October 2026)
+
+Both websites use the existing `/api/contact` endpoint, but **From** must match
+the authenticated SMTP account to avoid sender mismatch or spam rejection.
+
+- SOLIDTEC remains unchanged: `DASHBOARD_SMTP_USER` + `DASHBOARD_SMTP_PASSWORD`,
+  sender `lt@solidtec.dk`.
+- CONSULTS sends as `CONSULTS <info@consults.dk>` only after its OWN active
+  mailbox credentials are configured on the Vercel **production** environment.
+- On the same one.com provider, create `CONSULTS_SMTP_PASSWORD` (Sensitive),
+  the password of the mailbox `info@consults.dk`; username defaults to
+  `info@consults.dk` and host/port inherit `send.one.com:465` from the existing
+  SMTP configuration.
+- If CONSULTS email is hosted elsewhere, additionally set
+  `CONSULTS_SMTP_HOST`, `CONSULTS_SMTP_PORT` and optionally
+  `CONSULTS_SMTP_USER` (which must equal `info@consults.dk`).
+- **Never** copy these credentials to GitHub, client JavaScript or chat.
+  Redeploy the Vercel production project after updating the environment.
+- Until the dedicated SMTP password is configured, the existing functional
+  SOLIDTEC sender is retained as a temporary fallback, so the CONSULTS contact
+  form does not suddenly stop working. Do not declare the sender corrected
+  until an actual test email visibly has the proper From address.
+
+The server continues to select the recipient by validated browser Origin.
+`Reply-To` continues to be the visitor's email for direct replies.
+
