@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHandler} from './api/contact.js';
-import {makeContactMessage,contactSmtpSettings,contactReady} from './lib/contact-mail.js';
+import {makeContactMessage,makeContactCopy,contactEmailHtml,contactEmailText,contactSmtpSettings,contactReady} from './lib/contact-mail.js';
 function mock(body,options={}){
  const response={statusCode:200,headers:{},data:null};
  response.setHeader=(k,v)=>{response.headers[k]=v;return response;};
@@ -41,7 +41,7 @@ test('recipient selected only by validated site',()=>{
  const consults=makeContactMessage({...valid,site:'consults'},env);
  const solidtec=makeContactMessage({...valid,site:'solidtec'},env);
  assert.equal(consults.to,'info@consults.dk');
- assert.match(consults.subject,/^CONSULTS hjemmeside:/);
+ assert.match(consults.subject,/^CONSULTS ·/);
  assert.equal(solidtec.to,'owner@solidtec.dk');
  assert.match(solidtec.subject,/^SOLIDTEC hjemmeside:/);
  assert.throws(()=>makeContactMessage({...valid,site:'evil'},env));
@@ -142,4 +142,70 @@ test('a different approved CONSULTS provider can be configured independently',()
  assert.equal(consults.host,'smtp.example.com');
  assert.equal(consults.port,587);
  assert.equal(contactSmtpSettings('solidtec',env).host,'send.one.com');
+});
+
+
+test('CONSULTS customer copy defaults to off, on only by explicit boolean',async()=>{
+ for(const candidate of [false,'true',1,undefined]){
+  let input;const {request,response}=mock({...valid,copyToSender:candidate},{origin:'https://consults.dk'});
+  await createHandler({ready:()=>true,reserve:async()=>true,send:async p=>{input=p;return {copyRequested:false,copySent:false};}})(request,response);
+  assert.equal(response.statusCode,200);
+  assert.equal(input.copyToSender,false);
+  assert.equal(response.data.copyRequested,false);
+ }
+ let sent;const {request,response}=mock({...valid,copyToSender:true},{origin:'https://consults.dk'});
+ await createHandler({ready:()=>true,reserve:async()=>true,send:async p=>{sent=p;return {copyRequested:true,copySent:true};}})(request,response);
+ assert.equal(sent.copyToSender,true);
+ assert.deepEqual(response.data,{ok:true,copyRequested:true,copySent:true});
+});
+test('SOLIDTEC ignores customer-copy requests and preserves existing payload',async()=>{
+ let input;
+ const {request,response}=mock({...valid,copyToSender:true},{origin:'https://solidtec.dk'});
+ await createHandler({ready:()=>true,reserve:async()=>true,send:async p=>{input=p;}})(request,response);
+ assert.equal(input.copyToSender,false);
+ assert.deepEqual(response.data,{ok:true});
+});
+test('CONSULTS copy failure does not change owner delivery status',async()=>{
+ const {request,response}=mock({...valid,copyToSender:true},{origin:'https://consults.dk'});
+ await createHandler({ready:()=>true,reserve:async()=>true,send:async()=>({copyRequested:true,copySent:false})})(request,response);
+ assert.equal(response.statusCode,200);
+ assert.deepEqual(response.data,{ok:true,copyRequested:true,copySent:false});
+});
+test('CONSULTS body is HTML-escaped and multiline formatting is preserved',()=>{
+ const env={
+  DASHBOARD_SMTP_HOST:'send.one.com',DASHBOARD_SMTP_USER:'lt@solidtec.dk',
+  CONSULTS_SMTP_PASSWORD:'test-consults-secret'
+ };
+ const payload={...valid,site:'consults',
+  firma:'A&B <script>alert("x")</script>',
+  besked:'Line one\n<script>bad</script> & a quote "hello"',
+  emne:'WinCC <img src=x>'
+ };
+ const owner=makeContactMessage(payload,env);
+ const copy=makeContactCopy(payload,env);
+ assert.equal(owner.from.address,'info@consults.dk');
+ assert.equal(owner.to,'info@consults.dk');
+ assert.equal(owner.replyTo.address,'test@example.com');
+ assert.equal(copy.from.address,'info@consults.dk');
+ assert.equal(copy.to,'test@example.com');
+ assert.equal(copy.replyTo,'info@consults.dk');
+ assert.match(owner.html,/A&amp;B &lt;script&gt;alert/);
+ assert.match(owner.html,/Line one<br>&lt;script&gt;bad&lt;\/script&gt;/);
+ assert.doesNotMatch(owner.html,/<script>bad<\/script>/);
+ assert.doesNotMatch(owner.html,/<img src=x>/);
+ assert.match(owner.html,/CONSULTS/);
+ assert.match(copy.html,/Your enquiry to CONSULTS/);
+ assert.match(owner.text,/Line one\n<script>bad<\/script>/);
+ assert.match(contactEmailText(payload),/CONSULTS/);
+ assert.equal(contactEmailHtml(payload),owner.html);
+});
+test('CONSULTS customer copy is never mailed with SOLIDTEC authentication',()=>{
+ const fallback={DASHBOARD_SMTP_HOST:'send.one.com',DASHBOARD_SMTP_USER:'lt@solidtec.dk'};
+ assert.throws(()=>makeContactCopy({...valid,site:'consults'},fallback),/Dedicated/);
+});
+test('HTTP readiness is scoped to each website',async()=>{
+ let siteReady;
+ const {request,response}=mock(valid,{origin:'https://consults.dk'});
+ await createHandler({ready:site=>{siteReady=site;return true;},reserve:async()=>true,send:async()=>{}})(request,response);
+ assert.equal(siteReady,'consults');assert.equal(response.statusCode,200);
 });
