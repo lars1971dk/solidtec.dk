@@ -38,7 +38,8 @@ export function createHandler({ready=contactReady,send=sendContact,reserve=reser
    firma:clean(data.firma,120),navn:clean(data.navn,120),
    email:clean(data.email,254),tlf:clean(data.tlf||'',60),
    emne:clean(data.emne||'',100),besked:clean(data.besked,2500),
-   lang:data.lang==='en'?'en':'da',site,copy:site==='solidtec'&&data.copy===true
+   lang:data.lang==='en'?'en':'da',site,copy:site==='solidtec'&&data.copy===true,
+   copyToSender:site==='consults'&&data.copyToSender===true
   };
   const safeHeaderField=v=>typeof v==='string'&&!/[\r\n]/.test(v);
   if(!payload.firma||!payload.navn||!payload.besked||payload.besked.length<10||
@@ -46,11 +47,11 @@ export function createHandler({ready=contactReady,send=sendContact,reserve=reser
      !safeHeaderField(payload.email)||!safeHeaderField(payload.navn)||
      !safeHeaderField(payload.emne)||!safeHeaderField(payload.firma)||
      payload.emne===null||payload.tlf===null)return err(res,400,'Check the required fields');
-  if(!ready())return err(res,503,'Contact form not configured');
+  if(!ready(site))return err(res,503,'Contact form not configured');
   try{
    if(!await reserve(site))return err(res,429,'Too many requests; try again later');
    const delivery=await send(payload);
-   return res.status(200).json({ok:true,copySent:delivery?.copySent===true});
+   return res.status(200).json(site==='consults'?{ok:true,copyRequested:payload.copyToSender,copySent:delivery?.copySent===true}:{ok:true,copySent:delivery?.copySent===true});
   }catch(error){
    console.error('Contact submission failed',error?.name||'Error');
    return err(res,503,'Could not send message; please contact us by phone or email');
