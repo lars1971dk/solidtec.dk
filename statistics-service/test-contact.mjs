@@ -41,9 +41,9 @@ test('recipient selected only by validated site',()=>{
  const consults=makeContactMessage({...valid,site:'consults'},env);
  const solidtec=makeContactMessage({...valid,site:'solidtec'},env);
  assert.equal(consults.to,'info@consults.dk');
- assert.match(consults.subject,/^CONSULTS hjemmeside:/);
- assert.equal(solidtec.to,'owner@solidtec.dk');
- assert.match(solidtec.subject,/^SOLIDTEC hjemmeside:/);
+ assert.match(consults.subject,/^CONSULTS ·/);
+ assert.equal(solidtec.to,'info@solidtec.dk');
+ assert.match(solidtec.subject,/^SOLIDTEC:/);
  assert.throws(()=>makeContactMessage({...valid,site:'evil'},env));
 });
 test('rejects unknown origins and never sends',async()=>{
@@ -81,3 +81,4 @@ test('options preflight for CONSULTS does not send',async()=>{
  await createHandler({ready:()=>true,reserve:async()=>true,send:async()=>{throw Error('Should not send');}})(request,response);
  assert.equal(response.statusCode,204);
 });
+
