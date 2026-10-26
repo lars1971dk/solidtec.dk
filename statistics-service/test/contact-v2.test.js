@@ -19,7 +19,7 @@ test('customer copy is explicit and addressed only to validated user',()=>{
  assert.equal(c.replyTo,'info@solidtec.dk');
  assert.match(c.subject,/Kopi/);
 });
-test('consults remains on its original inbox and has no customer copy',()=>{
+test('CONSULTS retains its inbox and ignores SOLIDTEC copy flag',()=>{
  const p={...payload,site:'consults'};
  assert.equal(makeContactMessage(p,cfg).to,'info@consults.dk');
  assert.equal(makeCustomerCopy(p,cfg),null);
@@ -37,3 +37,4 @@ test('API only opts into copy for solidtec and returns real delivery status',asy
  assert.equal(received[0].copy,true);
  assert.equal(received[1].copy,false);
 });
+
