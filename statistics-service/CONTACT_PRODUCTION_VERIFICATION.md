@@ -9,6 +9,7 @@ CONSULTS_SMTP_PASSWORD metadata: sensitive, production only; created before this
 Live POST tests against https://solidtecdk-statistics-service.vercel.app/api/contact:
 - CONSULTS, no copy: HTTP 200, {"ok":true,"copyRequested":false,"copySent":false}.
 - CONSULTS, explicit copy: HTTP 200, {"ok":true,"copyRequested":true,"copySent":true}.
+- SOLIDTEC, no copy: HTTP 200, {"ok":true,"copySent":false}.
 - SOLIDTEC, explicit copy: HTTP 200, {"ok":true,"copySent":true}.
 Test messages explicitly identified as SYSTEMTEST; visitor/copy destination lt@solidtec.dk. These results prove server-side completion of SMTP send calls, not final inbox placement.
 
@@ -16,5 +17,5 @@ Live CONSULTS Danish HTML inspected: copyToSender checkbox and boolean payload c
 
 Local validation with installed dependencies: npm test, 34 passed, zero failed. Contact subset: 16 passed. Tests exercise sendContact owner-first ordering, no-copy, copy success, copy rejection returning partial success, owner failure stopping copy, missing dedicated credential suppressing copy, sender/Reply-To isolation and invalid SMTP user rejection. SMTP transport is mocked; no credentials or external mail used by local tests.
 
-Remaining closure evidence: received owner/copy messages, actual From and Reply-To headers and reply actions, SPF/DKIM/DMARC results, inbox/spam placement, Danish/English desktop/mobile appearance, SOLIDTEC no-copy live test. No mailbox connector is available in this session; do not mark these checks complete from SMTP acceptance alone.
+Remaining closure evidence: received owner/copy messages, actual From and Reply-To headers and reply actions, SPF/DKIM/DMARC results, inbox/spam placement, Danish/English desktop/mobile appearance. No mailbox connector is available in this session; do not mark these checks complete from SMTP acceptance alone.
 
