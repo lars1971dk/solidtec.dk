@@ -19,3 +19,7 @@ Local validation with installed dependencies: npm test, 34 passed, zero failed. 
 
 Remaining closure evidence: received owner/copy messages, actual From and Reply-To headers and reply actions, SPF/DKIM/DMARC results, inbox/spam placement, Danish/English desktop/mobile appearance. No mailbox connector is available in this session; do not mark these checks complete from SMTP acceptance alone.
 
+
+## Follow-up production checks
+
+Public Danish and English HTML on consults.dk and solidtec.dk contains the expected copy field, shared production API URL and copySent result handling. This is static HTML inspection, not interactive browser rendering. Production OPTIONS requests for all four allowed origins (apex/www for both brands) returned HTTP 204 with the exact matching Access-Control-Allow-Origin. No mailbox-reading tool is connected; plugin discovery did not identify a suitable one.com/IMAP connector. Received-message/header verification remains pending and requires original test messages (.eml), without passwords.
