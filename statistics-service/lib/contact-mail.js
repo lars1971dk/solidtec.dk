@@ -80,7 +80,7 @@ export function contactEmailHtml(payload,{customer=false}={}){
  ).join('');
  const action=customer
   ?'<a href="mailto:info@consults.dk" style="display:inline-block;background-color:#ed651c;color:#fff;font-weight:700;padding:12px 20px;text-decoration:none;border-radius:5px;">'+(lang==='en'?'Reply to CONSULTS':'Svar CONSULTS')+'</a>'
-  :'<a href="mailto:'+escapeHtml(payload.email)+'" style="display:inline-block;background-color:#ed651c;color:#fff;font-weight:700;padding:12px 20px;text-decoration:none;border-radius:5px;">'+(lang==='en'?'Reply to visitor':'Besvar forespørgsel')+'</a>';
+  :'';
  return '<!doctype html><html lang="'+lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
   '<title>'+escapeHtml(title)+'</title></head>'+
   '<body style="margin:0;padding:24px 12px;background:#f2f5fa;font-family:Arial,Helvetica,sans-serif;color:#17243b;">'+
@@ -95,7 +95,7 @@ export function contactEmailHtml(payload,{customer=false}={}){
    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;border:1px solid #e7ebf2;">'+rows+'</table>'+
    '<h2 style="font-size:15px;margin:29px 0 12px;color:#10203b;">'+escapeHtml(l.message)+'</h2>'+
    '<div style="padding:18px 20px;border-left:3px solid #ed651c;background:#f5f7fb;color:#24344c;font-size:14px;line-height:1.65;overflow-wrap:anywhere;">'+newlineHtml(payload.besked)+'</div>'+
-   '<div style="margin:27px 0 5px;">'+action+'</div>'+
+   (action?'<div style="margin:27px 0 5px;">'+action+'</div>':'')+
   '</td></tr>'+
   '<tr><td style="padding:20px 30px 28px;border-top:1px solid #e7ebf2;font-size:12px;line-height:1.65;color:#657082;">'+
   escapeHtml(customer?l.copyFoot:l.ownerFoot)+'<br>'+
