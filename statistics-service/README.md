@@ -218,3 +218,30 @@ Mail links expire after 15 minutes and can be used once; private Blob ETag write
 
 Preview counts are no longer collected or returned by this service. Existing retained preview objects are not deleted by this change and expire through the normal retention process. IP rules here apply only to solidtec.dk and consults.dk.
 
+
+
+
+## CONSULTS contact production operations
+
+The shared contact API is deployed in Vercel project `solidtec.dk-statistics-service`, root `statistics-service`. Production forms call `https://solidtecdk-statistics-service.vercel.app/api/contact`.
+
+Configure `CONSULTS_SMTP_PASSWORD` as a Sensitive/Secret Production variable directly in Vercel. Never request, print, decrypt, commit or download the credential. `CONSULTS_SMTP_USER` defaults to and must equal `info@consults.dk`. Optional `CONSULTS_SMTP_HOST` and `CONSULTS_SMTP_PORT` inherit `DASHBOARD_SMTP_HOST` and `DASHBOARD_SMTP_PORT` (default 465). Port 465 uses implicit TLS; other ports require STARTTLS. `CONSULTS_CONTACT_RECIPIENT_EMAIL` defaults to `info@consults.dk`. Deploy after environment changes. Existing `DASHBOARD_SMTP_*` and optional `SOLIDTEC_FROM_EMAIL` remain SOLIDTEC settings.
+
+Without the CONSULTS credential, owner mail falls back to the existing SOLIDTEC SMTP identity and CONSULTS customer copies are suppressed. This fallback is not completion of dedicated sender verification.
+
+CONSULTS explicitly opts in with boolean `copyToSender:true`; SOLIDTEC uses `copy:true`. The server selects the brand from the allowlisted Origin, never a supplied recipient. Owner delivery happens first. CONSULTS owner mail replies to the visitor; its separate customer copy replies to `info@consults.dk`. If owner delivery fails, return 503 and do not send a copy. If only the copy fails, return 200 `{ok:true,copyRequested:true,copySent:false}`; show partial success and do not automatically resubmit. SMTP acceptance does not prove inbox delivery.
+
+Run `npm test` (34 tests after the 2026-10-26 test corrections), including contact delivery tests that mock only SMTP transport and never use production credentials. PR #17 was closed without merging; the implementation already reached main through PR #16. Use the deployed commit, not PR #17's historical test count, for release evidence.
+
+### Production acceptance record
+
+Record deployment ID, commit, timestamp, environment metadata only, request/result and received mail evidence. Verify:
+
+- CONSULTS without copy: one owner mail, no customer copy; API copyRequested=false/copySent=false.
+- CONSULTS with copy: one owner mail and one separate customer mail; copyRequested=true/copySent=true.
+- Actual received From is CONSULTS <info@consults.dk>; owner Reply-To targets visitor; customer Reply-To targets info@consults.dk. Verify Reply in the mail client and record redacted authentication headers (SPF/DKIM/DMARC).
+- Danish and English HTML/plain text, mobile rendering, special characters and escaped HTML.
+- Controlled transport rejection after owner acceptance: partial success, no automatic owner resend; first-send rejection: 503 and no copy. Automated transport tests cover these branches; production inbox/UI evidence is a separate acceptance item.
+- SOLIDTEC with and without copy retains info@solidtec.dk recipient, approved existing sender, branding and Reply-To.
+
+Do not mark received-message or mailbox-header checks passed from an API response alone. Keep missing evidence explicitly pending.
